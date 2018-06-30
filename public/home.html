@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="/stylesheets/default.css">
+        <title>Pet Care | Home</title>
+    </head>
+    
+    <body>
+        <form action="/newAnimals" method="post">
+            <label for="aname">Pet's Name: </label>	
+            <input type="text" id="aname" name="aname" required><br>
+            
+            <label for="species">Species: </label>	
+            <input type="text" id="species" name="species" required><br>
+            
+            <button type="submit">Add new pet</button>
+<!--            <input type="button" value="Purchase new pet" onclick="window.location.href=window.location.href + '/newAnimals'"/>-->
+        </form>
+        
+        <form action="/newItems" method="post">
+            <label for="iname">Item's name: </label>	
+            <input type="text" id="iname" name="iname" required><br>
+            
+            <label for="quantity">Quantity: </label>	
+            <input type="text" id="quantity" name="quantity" required><br>
+            
+            <button type="submit">Add new item</button>
+<!--            <input type="button" value="Purchase new pet" onclick="window.location.href=window.location.href + '/newAnimals'"/>-->
+        </form>
+    </body>
+</html>
