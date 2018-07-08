@@ -1,5 +1,9 @@
 var express = require("express");
+var session = require("express-session")
+var bcrypt = require("bcrypt-nodejs")
+
 var app = express();
+
 
 const connectionString = process.env.DATABASE_URL || "postgres://my_user:my_pass@localhost:5432/pets";
 
@@ -75,7 +79,7 @@ function newAnimalsDb(aname, species, callback) {
 
 function signUp(req, res) {
     const uname = req.body.name;
-    const pass = req.body.password;
+    const pass = bcrypt.hashSync(req.body.password);
     
     console.log("Signing up with username: " + uname);
     
@@ -93,6 +97,15 @@ function signUpDb(uname, pass, callback) {
     console.log("About to access DB to sign up...");
     
     // TODO: hash password, access DB, insert into it. Give standard starting money amount
+    var qString = "INSERT INTO users(username, password, money), VALUES($1::string, $2::string, $3::float)";
+    pool.query(qString, [uname, pass, 100.00], function(err, result) {
+        if (err) {
+            console.log("ERROR: " + err);
+			callback(err, null);
+        }
+        console.log("Fonud result: " + JSON.stringify(result.rows));
+        callback(null, result.rows);
+    });
     
     console.log("Successfully inserted " + uname + " into the system. Please go to the sign in page."); // or redirect to sign in page
     callback(null, uname); // does this need to be a callback? What gets returned with the callback function?
