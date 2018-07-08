@@ -1,6 +1,6 @@
 var express = require("express");
-var session = require("express-session")
-var bcrypt = require("bcrypt-nodejs")
+var session = require("express-session");
+var bcrypt = require("bcrypt-nodejs");
 
 var app = express();
 
@@ -28,6 +28,9 @@ app.set("port", process.env.PORT || 5000)
 })
 
 function newItems(req,res) {
+//    if (!req.session.loggedIn)
+//        window.location.replace("/signin.html");
+    
     const iname = req.body.iname;
     const quantity = req.body.quantity;
     
@@ -79,36 +82,37 @@ function newAnimalsDb(aname, species, callback) {
 
 function signUp(req, res) {
     const uname = req.body.name;
-    const pass = bcrypt.hashSync(req.body.password);
+    const pass = req.body.password; // TODO: hash?
+    console.log("Pass is: " + pass);
     
     console.log("Signing up with username: " + uname);
     
     signUpDb(uname, pass, function(error, result) {
         // now we just need to send back the data
-        if (error) {
+        if(error || result == null || result.length < 1) {
             res.status(500).json({success: false, data: error});
         } else {
-            res.status(200).json({username: uname, succes: true});
+            res.status(200).json({success: true, user: result});
         }
     });
 }
 
 function signUpDb(uname, pass, callback) {
     console.log("About to access DB to sign up...");
+    console.log("Pass is: " + pass);
     
-    // TODO: hash password, access DB, insert into it. Give standard starting money amount
-    var qString = "INSERT INTO users(username, password, money), VALUES($1::string, $2::string, $3::float)";
-    pool.query(qString, [uname, pass, 100.00], function(err, result) {
+    var sql = "INSERT INTO users(username, password, money) VALUES($1, $2, $3)";
+    var params = [uname, pass, 100];
+    
+    pool.query(sql, params, function(err, result) {
         if (err) {
-            console.log("ERROR: " + err);
+            console.log("ERROR in query: " + err);
 			callback(err, null);
+        } else {
+            console.log("Successfully inserted " + uname + " into the system. Please go to the sign in page."); // or redirect to sign in page
+            callback(null, uname);
         }
-        console.log("Fonud result: " + JSON.stringify(result.rows));
-        callback(null, result.rows);
     });
-    
-    console.log("Successfully inserted " + uname + " into the system. Please go to the sign in page."); // or redirect to sign in page
-    callback(null, uname); // does this need to be a callback? What gets returned with the callback function?
 }
 
 function signIn(req, res) {
@@ -119,10 +123,10 @@ function signIn(req, res) {
     
     signInDb(uname, pass, function(error, result) {
         // now we just need to send back the data
-        if (error) {
+        if (error || result == null || result.length < 1) {
             res.status(500).json({success: false, data: error});
         } else {
-            res.status(200).json({username: uname, succes: true});
+            res.status(200).json({success: true, match: result});
         }
     });
 }
@@ -130,11 +134,27 @@ function signIn(req, res) {
 function signInDb(uname, pass, callback) {
     console.log("About to access DB to sign in...");
     
-    // TODO: access DB, hash password can compare.
+    var sql = "SELECT password FROM users WHERE username = $1";
+    var params = [uname];
     
-    console.log("Successfully signed in with " + uname + "."); // or redirect to home page
-    callback(null, uname); // does this need to be a callback? What gets returned with the callback function?
+    pool.query(sql, params, function(err, result) {
+        if (err) {
+            console.log("Error in query: " + err);
+            callback(err, null);
+        } else {
+            const dbPass = result.rows[0].password;
+            if (dbPass === pass) {
+                console.log("Match");
+                req.session.loggedIn = true;
+                callback(null, true);
+            } else {
+                console.log("Don't Match");
+                callback(null, false);
+            }
+        }
+    });
 }
+               
 
 function getAnimals(req, res) {
     console.log("Getting the animals...");
