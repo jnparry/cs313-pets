@@ -1,27 +1,43 @@
 var express = require("express");
 var session = require("express-session");
 var bcrypt = require("bcrypt-nodejs");
-
 var app = express();
-
 
 const connectionString = process.env.DATABASE_URL || "postgres://my_user:my_pass@localhost:5432/pets";
 
 const { Pool } = require('pg');
 const pool = new Pool({ connectionString: connectionString });
 
+var sessionChecker = (req, res, next) => {
+    console.log("Session cheker...");
+    
+    if (!req.session.loggedIn) {
+        console.log("Not signed in.");
+        res.redirect('/signin.html');
+    } else {
+        next();
+    }    
+};
+
 app.set("port", process.env.PORT || 5000)
+    .set('views', (__dirname + '/views'))
+    .set('view engine', 'ejs')
+
     .use(express.json())                       // for POST
     .use(express.urlencoded({extended:true}))  // for POST
     .use(express.static(__dirname + "/public"))
+    .use(session({ secret: 'kittens' }))
 
-    .get("/getAnimals", getAnimals) // another way to do this: .get("/video/:id", getVideo)
-    .get("/getItems", getItems)
+    .get("/getAnimals", sessionChecker, getAnimals) // another way to do this: .get("/video/:id", getVideo)
+    .get("/getItems", sessionChecker, getItems)
+    .get("/home", sessionChecker, function (req, res) {
+        res.render('pages/home');
+    })
 
     .post("/sup", signUp)
     .post("/sin", signIn)
-    .post("/newAnimals", newAnimals)
-    .post("/newItems", newItems)
+    .post("/newAnimals", sessionChecker, newAnimals)
+    .post("/newItems", sessionChecker, newItems)
 
     .listen(app.get("port"), function() {
     console.log("Listening on port: " + app.get("port"));
@@ -29,7 +45,6 @@ app.set("port", process.env.PORT || 5000)
 
 function newItems(req,res) {
 //    if (!req.session.loggedIn)
-//        window.location.replace("/signin.html");
     
     const iname = req.body.iname;
     const quantity = req.body.quantity;
@@ -55,41 +70,52 @@ function newItemsDb(iname, quantity, callback) {
     callback (null, iname);
 }
 
-function newAnimals(req,res) {
+function newAnimals(req, res) {
     const aname = req.body.aname;
     const species = req.body.species;
+    const id = req.session.user_id;
     
     console.log("Adding new animal of species " + species + " with name: " + aname);
 
-    newAnimalsDb(aname, species, function(error, result) {
+    newAnimalsDb(aname, species, id, function(error, result) {
         // now we just need to send back the data
-        if (error) {
+        if (error || result == null || result.length < 1) {
             res.status(500).json({success: false, data: error});
         } else {
-            res.status(200).json({animal_name: aname, species: species, succes: true});
+            res.redirect("/home");
+//            res.status(200).json({succes: true, animal_name: aname, species: species});
         }
     });
 }
 
-function newAnimalsDb(aname, species, callback) {
+function newAnimalsDb(aname, species, id, callback) {
     console.log("Accessing DB to add new pet...");
     
-    // TODO access DB, insert into it
+    var sql = "INSERT INTO animals(usersid, name, species, ishungry, lastfed, isthirsty, lastdrink) VALUES($1, $2, $3, $4, $5, $6, $7)";
+    var params = [id, aname, species, true, null, true, null];
     
-    console.log("Successfully inserted " + species + " with name " + aname + "into DB.");
-    callback (null, aname);
+    pool.query(sql, params, function(err, result) {
+        if (err) {
+            console.log("Error in query: " + err);
+            callback(err, null);
+        } else {   
+            console.log("Successfully inserted " + species + " with name " + aname + "into DB.");
+            callback (null, aname);
+        }
+    });
 }
 
 function signUp(req, res) {
     const uname = req.body.name;
-    const pass = req.body.password; // TODO: hash?
+    const pass = bcrypt.hashSync(req.body.password, bcrypt.genSaltSync(8), null); // TODO: hash?
+
     console.log("Pass is: " + pass);
     
     console.log("Signing up with username: " + uname);
     
     signUpDb(uname, pass, function(error, result) {
         // now we just need to send back the data
-        if(error || result == null || result.length < 1) {
+        if (error || result == null || result.length < 1) {
             res.status(500).json({success: false, data: error});
         } else {
             res.status(200).json({success: true, user: result});
@@ -126,7 +152,12 @@ function signIn(req, res) {
         if (error || result == null || result.length < 1) {
             res.status(500).json({success: false, data: error});
         } else {
-            res.status(200).json({success: true, match: result});
+            if (result) {
+                req.session.loggedIn = true;
+                req.session.user_id = result;
+                console.log("Logged in!");
+            }
+            res.redirect("/home");
         }
     });
 }
@@ -134,19 +165,19 @@ function signIn(req, res) {
 function signInDb(uname, pass, callback) {
     console.log("About to access DB to sign in...");
     
-    var sql = "SELECT password FROM users WHERE username = $1";
+    var sql = "SELECT password, id FROM users WHERE username = $1";
     var params = [uname];
     
     pool.query(sql, params, function(err, result) {
         if (err) {
             console.log("Error in query: " + err);
             callback(err, null);
-        } else {
+        } else {            
             const dbPass = result.rows[0].password;
-            if (dbPass === pass) {
+            
+            if (bcrypt.compareSync(pass, dbPass)) {
                 console.log("Match");
-                req.session.loggedIn = true;
-                callback(null, true);
+                callback(null, result.rows[0].id);
             } else {
                 console.log("Don't Match");
                 callback(null, false);
@@ -155,8 +186,7 @@ function signInDb(uname, pass, callback) {
     });
 }
                
-
-function getAnimals(req, res) {
+function getAnimals(req, res) {    
     console.log("Getting the animals...");
     
     // Get the id of the animals (from the url)
