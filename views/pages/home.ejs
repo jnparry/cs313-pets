@@ -6,7 +6,28 @@
         <title>Pet Care | Home</title>
     </head>
     
-    <body>
+    <body>    
+        <div>
+            <p>Your current Pets:</p>
+            <% rows.forEach(function(r) { %>
+                <p><%= r.name %> the <%= r.species %><br>
+                <% if ((((Math.floor(Date.now() / 1000)) - r.lastfed) >= 86400) || (!r.lastfed)) { %>
+                    Hunger level: high
+                <% } else { %>
+                    Hunger level: low
+                <% } %>
+                    <button id="feed">Give food</button><br>
+                <% if ((((Math.floor(Date.now() / 1000)) - r.lastdrink) >= 86400) || (!r.lastdrink)) { %>
+                    Thirst level: high
+                <% } else { %>
+                    Thirst level: low
+                <% } %>
+                    <button id="drink">Give water</button></p>
+            <% }); %>
+        </div>
+        
+        <br>
+        
         <form action="/newAnimals" method="post">
             <label for="aname">Pet's Name: </label>	
             <input type="text" id="aname" name="aname" required><br>
@@ -28,9 +49,5 @@
             <button type="submit">Add new item</button>
 <!--            <input type="button" value="Purchase new pet" onclick="window.location.href=window.location.href + '/newAnimals'"/>-->
         </form>
-        
-        <div>
-            
-        </div>
     </body>
 </html>

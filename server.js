@@ -4,9 +4,11 @@ var bcrypt = require("bcrypt-nodejs");
 var app = express();
 
 const connectionString = process.env.DATABASE_URL || "postgres://my_user:my_pass@localhost:5432/pets";
-
 const { Pool } = require('pg');
 const pool = new Pool({ connectionString: connectionString });
+
+var timeStamp = Math.floor(Date.now() / 1000);
+console.log(timeStamp); // 86400 seconds in a day
 
 var sessionChecker = (req, res, next) => {
     console.log("Session cheker...");
@@ -31,7 +33,7 @@ app.set("port", process.env.PORT || 5000)
     .get("/getAnimals", sessionChecker, getAnimals) // another way to do this: .get("/video/:id", getVideo)
     .get("/getItems", sessionChecker, getItems)
     .get("/home", sessionChecker, function (req, res) {
-        res.render('pages/home');
+        accessDB(req, res);
     })
 
     .post("/sup", signUp)
@@ -118,7 +120,8 @@ function signUp(req, res) {
         if (error || result == null || result.length < 1) {
             res.status(500).json({success: false, data: error});
         } else {
-            res.status(200).json({success: true, user: result});
+            res.redirect("/signin.html");
+//            res.status(200).json({success: true, user: result});
         }
     });
 }
@@ -137,6 +140,41 @@ function signUpDb(uname, pass, callback) {
         } else {
             console.log("Successfully inserted " + uname + " into the system. Please go to the sign in page."); // or redirect to sign in page
             callback(null, uname);
+        }
+    });
+}
+
+function accessDB(req, res) {
+    const usersId = req.session.user_id;
+    console.log("About to access db...");
+    
+    pullInfoDb(usersId, function(error, result) {
+        // now we just need to send back the data
+        if (error || result == null || result.length < 1) {
+            res.status(500).json({success: false, data: error});
+        } else {
+            res.render('pages/home', result);
+        }
+    });
+}
+
+function pullInfoDb(usersId, callback) {    
+    console.log("About to access DB pull user info...");
+    console.log("User's id is " + usersId);
+    
+    var sql = "SELECT * FROM animals WHERE usersid = $1";
+    var params = [usersId];
+    
+    pool.query(sql, params, function(err, result) {
+        if (err) {
+            console.log("ERROR in query: " + err);
+			callback(err, null);
+        } else {
+            console.log(result.rows);
+            
+            console.log("Successfully pulled info."); // or redirect to sign in page
+            var params = {rows: result.rows};
+            callback(null, params);
         }
     });
 }
