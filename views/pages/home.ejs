@@ -9,21 +9,23 @@
     <body>    
         <div>
             <p>Your current Pets:</p>
-            <% rows.forEach(function(r) { %>
-                <p><%= r.name %> the <%= r.species %><br>
-                <% if ((((Math.floor(Date.now() / 1000)) - r.lastfed) >= 86400) || (!r.lastfed)) { %>
-                    Hunger level: high
-                <% } else { %>
-                    Hunger level: low
-                <% } %>
-                    <button id="feed">Give food</button><br>
-                <% if ((((Math.floor(Date.now() / 1000)) - r.lastdrink) >= 86400) || (!r.lastdrink)) { %>
-                    Thirst level: high
-                <% } else { %>
-                    Thirst level: low
-                <% } %>
-                    <button id="drink">Give water</button></p>
-            <% }); %>
+            <form action="/changeAnimalStatus" method="post">
+                <% rows.forEach(function(r) { %>
+                    <p><%= r.name %> the <%= r.species %><br>
+                    <% if ((((Math.floor(Date.now() / 1000)) - r.lastfed) >= 86400) || (!r.lastfed)) { %>
+                        Hunger level: high
+                    <% } else { %>
+                        Hunger level: low
+                    <% } %>
+                        <button type="submit" id="feed" name="feed" value="<%r.id%>">Give food</button><br>
+                    <% if ((((Math.floor(Date.now() / 1000)) - r.lastdrink) >= 86400) || (!r.lastdrink)) { %>
+                        Thirst level: high
+                    <% } else { %>
+                        Thirst level: low
+                    <% } %>
+                        <button type="submit" id="drink" name="drink" value="<%r.id%>">Give water</button></p>
+                <% }); %>
+            </form>
         </div>
         
         <br>
