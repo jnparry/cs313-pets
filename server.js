@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt-nodejs");
 var app = express();
 
 // DATABASE_URL
-const connectionString = process.env.HEROKU_POSTGRESQL_CRIMSON_URL || "postgres://my_user:my_pass@localhost:5432/pets";
+const connectionString = process.env.DATABASE_URL || "postgres://my_user:my_pass@localhost:5432/pets";
 const { Pool } = require('pg');
 const pool = new Pool({ connectionString: connectionString });
 
