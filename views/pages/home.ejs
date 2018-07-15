@@ -7,7 +7,13 @@
     </head>
     
     <body>    
-        <div>
+        <ul>
+          <li><a href="#">Home</a></li>
+          <li><a href="#">Account</a></li>
+          <li><a href="/signout">Logout</a></li>
+        </ul>
+        
+        <div id='left'>
             <p>Your current Pets:</p>
             <form action="/changeAnimalStatus" method="post">
                 <% rows.forEach(function(r) { %>
@@ -17,15 +23,37 @@
                     <% } else { %>
                         Hunger level: low
                     <% } %>
-                        <button type="submit" id="feed" name="feed" value="<%r.id%>">Give food</button><br>
+                        <button type="submit" id="feed" name="feed" value="<%=r.id%>">Give food</button><br>
                     <% if ((((Math.floor(Date.now() / 1000)) - r.lastdrink) >= 86400) || (!r.lastdrink)) { %>
                         Thirst level: high
                     <% } else { %>
                         Thirst level: low
                     <% } %>
-                        <button type="submit" id="drink" name="drink" value="<%r.id%>">Give water</button></p>
+                        <button type="submit" id="drink" name="drink" value="<%=r.id%>">Give water</button></p>
                 <% }); %>
             </form>
+        </div>
+        
+        <div id='right'>
+            <h2><%= username %></h2>
+            <h3><%= money %></h3>
+            
+            <h2>Store</h2>
+            <form action="/purchase" method="post">
+                <label for="water">Water </label>
+                <input type="number" name="water">
+                <button type="submit">Purchase</button>
+                <label for="food">Food </label>
+                <input type="number" name="food">
+                <button type="submit">Purchase</button>
+            </form>
+
+            <h2>Your Items</h2>
+            <% items.forEach(function(i) { %>
+                <p id="txtData">
+                    <%= i.name %> - Quantity: <%= i.quantity %><br>
+                </p>
+            <% }); %>
         </div>
         
         <br>
@@ -40,6 +68,7 @@
             <button type="submit">Add new pet</button>
 <!--            <input type="button" value="Purchase new pet" onclick="window.location.href=window.location.href + '/newAnimals'"/>-->
         </form>
+<!--
         
         <form action="/newItems" method="post">
             <label for="iname">Item's name: </label>	
@@ -49,7 +78,8 @@
             <input type="text" id="quantity" name="quantity" required><br>
             
             <button type="submit">Add new item</button>
-<!--            <input type="button" value="Purchase new pet" onclick="window.location.href=window.location.href + '/newAnimals'"/>-->
+            <input type="button" value="Purchase new pet" onclick="window.location.href=window.location.href + '/newAnimals'"/>
         </form>
+-->
     </body>
 </html>

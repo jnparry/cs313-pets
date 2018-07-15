@@ -13,7 +13,7 @@ var timeStamp = Math.floor(Date.now() / 1000);
 //console.log(timeStamp); // 86400 seconds in a day
 
 var sessionChecker = (req, res, next) => {
-    console.log("Session cheker...");
+    console.log("Session checker...");
     
     if (!req.session.loggedIn) {
         console.log("Not signed in.");
@@ -37,13 +37,12 @@ app.set("port", process.env.PORT || 5000)
     }))
 
     .get("/getAnimals", sessionChecker, getAnimals) // another way to do this: .get("/video/:id", getVideo)
-    .get("/getItems", sessionChecker, getItems)
-    .get("/home", sessionChecker, function(req, res) {
-        getAnimals(req, res);
-    })
+    .get("/home", sessionChecker, getItems)
+    .get("/signout", signout)
 
     .post("/sup", signUp)
     .post("/sin", signIn)
+    .post("/purchase", sessionChecker, newItems)
     .post("/newAnimals", sessionChecker, newAnimals)
     .post("/newItems", sessionChecker, newItems)
     .post("/changeAnimalStatus", sessionChecker, feedWater)
@@ -71,6 +70,11 @@ function status(id, type) {
     form.submit();
 }
 
+function signout(req, res) {
+    req.session.destroy();
+    res.redirect('/signin.html');
+}
+
 function feedWater(req, res) {
     const feed = req.body.feed;
     const drink = req.body.drink;
@@ -81,8 +85,8 @@ function feedWater(req, res) {
        if (error) {
            res.status(500).json({success: false, data: error});
        } else {
-           res.status(200).json({succes:true});
-//           res.redirect("/home");
+//           res.status(200).json({succes:true});
+           res.redirect("/home");
        }
     });
 }
@@ -117,8 +121,8 @@ function feedWaterDb(feed, drink, callback) {
 }
 
 function newItems(req, res) {    
-    const iname = req.body.iname;
-    const quantity = req.body.quantity;
+    const waternum = req.body.water;
+    const foodnum = req.body.food;
     
     console.log("Adding new item " + iname + " of quantity " + quantity);
 
@@ -222,7 +226,7 @@ function getAnimals(req, res) {
         if (error || result == null || result.length < 1) {
             res.status(500).json({success: false, data: error});
         } else {
-            res.render('pages/home', result);
+            res.render('pages/home', {rows: result, username: req.session.username, money: req.session.money, items: req.session.items}); // {rows: result.rows};
         }
     });
 }
@@ -231,7 +235,7 @@ function getAnimalsDb(usersId, callback) {
     console.log("About to access DB pull user info...");
     console.log("User's id is " + usersId);
     
-    var sql = "SELECT * FROM animals WHERE usersid = $1";
+    var sql = "SELECT * FROM animals WHERE usersid = $1 ORDER BY id";
     var params = [usersId];
     
     pool.query(sql, params, function(err, result) {
@@ -242,7 +246,7 @@ function getAnimalsDb(usersId, callback) {
             console.log(result.rows);
             
             console.log("Successfully pulled info."); // or redirect to sign in page
-            var params = {rows: result.rows};
+            var params = result.rows;
             callback(null, params);
         }
     });
@@ -254,7 +258,7 @@ function signIn(req, res) {
     
     console.log("Signing in with username: " + uname);
     
-    signInDb(uname, pass, function(error, result) {
+    signInDb(uname, pass, function(error, result, result2) {
         // now we just need to send back the data
         if (error || result == null || result.length < 1) {
             res.status(500).json({success: false, data: error});
@@ -262,6 +266,8 @@ function signIn(req, res) {
             if (result) {
                 req.session.loggedIn = true;
                 req.session.user_id = result;
+                req.session.username = uname;
+                req.session.money = result2;
                 console.log("Logged in!");
             }
             res.redirect("/home");
@@ -272,68 +278,38 @@ function signIn(req, res) {
 function signInDb(uname, pass, callback) {
     console.log("About to access DB to sign in...");
     
-    var sql = "SELECT password, id FROM users WHERE username = $1";
+    var sql = "SELECT password, id, money FROM users WHERE username = $1";
     var params = [uname];
     
-    pool.query(sql, params, function(err, result) {
+    pool.query(sql, params, function(err, result, result2) {
         if (err) {
             console.log("Error in query: " + err);
-            callback(err, null);
+            callback(err, null, null);
         } else {            
             const dbPass = result.rows[0].password;
             
             if (bcrypt.compareSync(pass, dbPass)) {
                 console.log("Match");
-                callback(null, result.rows[0].id);
+                callback(null, result.rows[0].id, result.rows[0].money);
             } else {
                 console.log("Don't Match");
-                callback(null, false);
+                callback(null, false, false);
             }
         }
     });
 }
-               
-//function getAnimals(req, res) {    
-//    console.log("Getting the animals...");
-//    
-//    // Get the id of the animals (from the url)
-//    const id = req.query.id; // another way to do this: var id = req.params.id;
-//    
-//    // now we do a callback function because the DB could take a while
-//    getAnimalsDb(id, function(error, result) {
-//        // now we just need to send back the data
-//        if (error || result == null || result.length != 1) {
-//            res.status(500).json({success: false, data: error});
-//        } else {
-//            res.status(200).json(result[0]);
-//        }
-//    });
-//}
-//
-//function getAnimalsDb(id, callback) {
-//    console.log("Looking for person with id: " + id + "...");
-//    
-//    pool.query('SELECT * FROM users WHERE id = $1::int', [id], function(err, result) {
-//        if (err) {
-//            console.log("ERROR: " + err);
-//			callback(err, null);
-//        }
-//        console.log("Fonud result: " + JSON.stringify(result.rows));
-//        callback(null, result.rows);
-//    });
-//}
 
-function getItems(req, res) {
-    const id = req.query.id;
-    
+function getItems (req, res, next) {
+    const usersId = req.session.user_id;
     console.log("Getting items...");
 
-    getItemsDb(id, function(error, result) {
+    getItemsDb(usersId, function(error, result) {
         // now we just need to send back the data
-        if (error) {
+        if (error || result == null || result.length < 1) {
             res.status(500).json({success: false, data: error});
         } else {
-            res.status(200).json(result[0]);
+            req.session.items = result;
+            res.redirect("/getAnimals");
         }
     });
 }
@@ -341,12 +317,16 @@ function getItems(req, res) {
 function getItemsDb(id, callback) {
     console.log("Looking for items for person with id: " + id + "...");
     
-    pool.query('SELECT * FROM items WHERE usersId = $1::int', [id], function(err, result) {
+    var sql = "SELECT name, quantity FROM items WHERE usersId = $1 ORDER BY id";
+    var params = [id];
+    
+    pool.query(sql, params, function(err, result) {
         if (err) {
             console.log("ERROR: " + err);
 			callback(err, null);
+        } else {
+            console.log("Fonud result: " + JSON.stringify(result.rows));
+            callback(null, result.rows);
         }
-        console.log("Fonud result: " + JSON.stringify(result.rows));
-        callback(null, result.rows);
     });
 }
