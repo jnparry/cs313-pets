@@ -182,9 +182,9 @@ function newItemsDb(name, quantity, id, callback) {
 
 function updateMoney(newAmount, id) {
     var sql = "UPDATE users SET money = $1 WHERE id = $2";
-    var intMoney = parseInt(newAmount);
-    console.log("INTMONEY: " + intMoney);
-    var params = [80, id];
+//    var intMoney = parseInt(newAmount);
+//    console.log("INTMONEY: " + intMoney);
+    var params = [newAmount, id];
     
     pool.query(sql, params, function(err, result) {
         if (err) {
