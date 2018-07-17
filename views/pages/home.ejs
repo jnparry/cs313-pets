@@ -13,10 +13,14 @@
           <li><a href="/signout">Logout</a></li>
         </ul>
         
+        <% if (error) {
+            errorMsg(error);
+        } %>
+        
         <div id='left'>
             <p>Your current Pets:</p>
             <form action="/changeAnimalStatus" method="post">
-                <% rows.forEach(function(r) { %>
+                <% if (rows) { rows.forEach(function(r) { %>
                     <p><%= r.name %> the <%= r.species %><br>
                     <% if ((((Math.floor(Date.now() / 1000)) - r.lastfed) >= 86400) || (!r.lastfed)) { %>
                         Hunger level: high
@@ -30,56 +34,45 @@
                         Thirst level: low
                     <% } %>
                         <button type="submit" id="drink" name="drink" value="<%=r.id%>">Give water</button></p>
-                <% }); %>
+                <% }); }%>
             </form>
         </div>
         
         <div id='right'>
-            <h2><%= username %></h2>
+            <h1 style='margin-bottom: -15px;'><%= username %></h1>
             <h3><%= money %></h3>
             
             <h2>Store</h2>
             <form action="/purchase" method="post">
-                <label for="water">Water </label>
-                <input type="number" name="water">
+                <label for="water">$2.00 - Water </label>
+                <input class="num" type="number" name="water">
+                <button type="submit">Purchase</button><br>
+                <label for="food">$2.50 - Food </label>
+                <input class="num" type="number" name="food">
                 <button type="submit">Purchase</button>
-                <label for="food">Food </label>
-                <input type="number" name="food">
+            </form>
+            
+            <h2 style='margin-bottom: -15px;'>Purchase new pet</h2>
+            <p>$20.00</p>
+            
+            <form action="/newAnimals" method="post">
+                <label for="aname">Pet's Name: </label>	
+                <input type="text" id="aname" name="aname" required><br>
+
+                <label for="species">Species: </label>	
+                <input type="text" id="species" name="species" required><br>
+
                 <button type="submit">Purchase</button>
             </form>
 
             <h2>Your Items</h2>
-            <% items.forEach(function(i) { %>
-                <p id="txtData">
+            <p id="txtData">
+            <% if (items) { 
+                items.forEach(function(i) { %>
                     <%= i.name %> - Quantity: <%= i.quantity %><br>
-                </p>
-            <% }); %>
+                <% }); 
+            } %>
+            </p>
         </div>
-        
-        <br>
-        
-        <form action="/newAnimals" method="post">
-            <label for="aname">Pet's Name: </label>	
-            <input type="text" id="aname" name="aname" required><br>
-            
-            <label for="species">Species: </label>	
-            <input type="text" id="species" name="species" required><br>
-            
-            <button type="submit">Add new pet</button>
-<!--            <input type="button" value="Purchase new pet" onclick="window.location.href=window.location.href + '/newAnimals'"/>-->
-        </form>
-<!--
-        
-        <form action="/newItems" method="post">
-            <label for="iname">Item's name: </label>	
-            <input type="text" id="iname" name="iname" required><br>
-            
-            <label for="quantity">Quantity: </label>	
-            <input type="text" id="quantity" name="quantity" required><br>
-            
-            <button type="submit">Add new item</button>
-            <input type="button" value="Purchase new pet" onclick="window.location.href=window.location.href + '/newAnimals'"/>
-        </form>
--->
     </body>
 </html>

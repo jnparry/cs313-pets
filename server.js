@@ -39,6 +39,10 @@ app.set("port", process.env.PORT || 5000)
     .get("/getAnimals", sessionChecker, getAnimals) // another way to do this: .get("/video/:id", getVideo)
     .get("/home", sessionChecker, getItems)
     .get("/signout", signout)
+    .get("/resetError", function(req, res) {
+        req.session.error = null;
+        res.redirect("/home");
+    })
 
     .post("/sup", signUp)
     .post("/sin", signIn)
@@ -50,6 +54,11 @@ app.set("port", process.env.PORT || 5000)
     .listen(app.get("port"), function() {
     console.log("Listening on port: " + app.get("port"));
 })
+
+function errorMsg(msg) {
+    alert("Error: " + msg);
+    window.location.href = "/resetError";
+}
 
 function status(id, type) {
 
@@ -123,32 +132,80 @@ function feedWaterDb(feed, drink, callback) {
 function newItems(req, res) {    
     const waternum = req.body.water;
     const foodnum = req.body.food;
+    const id = req.session.user_id;
     
-    console.log("Adding new item " + iname + " of quantity " + quantity);
+    var name = null;
+    var quantity = null;
+    
+    if (waternum) {
+        quantity = waternum;
+        name = 'Water';
+    }
+    else if (foodnum) {
+        quantity = foodnum;
+        name = 'Food';
+    }
+    else {
+        quantity = 0;
+        name = 'Nothin';
+    }
+    
+    console.log("Adding new item");
 
-    newItemsDb(iname, quantity, function(error, result) {
+    newItemsDb(name, quantity, id, function(error, result) {
         // now we just need to send back the data
         if (error) {
             res.status(500).json({success: false, data: error});
         } else {
-            res.status(200).json({item_name: iname, quantity: quantity, succes: true});
+//            res.status(200).json({item_name: name, quantity: quantity, succes: true});
+            res.redirect("/home");
         }
     });
 }
 
-function newItemsDb(iname, quantity, callback) {
+function newItemsDb(name, quantity, id, callback) {
     console.log("Accessing DB to add new item...");
     
-    // TODO access DB, insert into it
+    var sql = "INSERT INTO items(usersid, name, quantity) VALUES($1, $2, $3)";
+    var params = [id, name, quantity];
     
-    console.log("Successfully inserted " + iname + " with quantity " + quantity + "into DB.");
-    callback (null, iname);
+    pool.query(sql, params, function(err, result) {
+       if (err) {
+           console.log("Error in query: " + err);
+           callback(err, null);
+       } else {
+           console.log("Successfully inserted item into DB.");
+           callback(null, name);
+       }
+    });
+}
+
+function updateMoney(newAmount, id) {
+    var sql = "UPDATE users SET money = $1 WHERE id = $2";
+    var intMoney = parseInt(newAmount);
+    console.log("INTMONEY: " + intMoney);
+    var params = [80, id];
+    
+    pool.query(sql, params, function(err, result) {
+        if (err) {
+            console.log("Error w/ moneys. " + err);
+        } else {
+            console.log("Successfully changed money amount.");
+        }
+    });
 }
 
 function newAnimals(req, res) {
     const aname = req.body.aname;
     const species = req.body.species;
     const id = req.session.user_id;
+    const newMoney = (((req.session.money).slice(1)) - 20.00);
+    console.log("NEW MONEY" + newMoney);
+    
+    if (newMoney < 0) {
+        req.session.error = "Insufficient funds.";
+        res.redirect("/home");
+    }
     
     console.log("Adding new animal of species " + species + " with name: " + aname);
 
@@ -157,6 +214,8 @@ function newAnimals(req, res) {
         if (error || result == null || result.length < 1) {
             res.status(500).json({success: false, data: error});
         } else {
+            updateMoney(newMoney, req.session.id);
+            req.session.money = "$" + newMoney + ".00";
             res.redirect("/home");
 //            res.status(200).json({succes: true, animal_name: aname, species: species});
         }
@@ -226,7 +285,10 @@ function getAnimals(req, res) {
         if (error || result == null || result.length < 1) {
             res.status(500).json({success: false, data: error});
         } else {
-            res.render('pages/home', {rows: result, username: req.session.username, money: req.session.money, items: req.session.items}); // {rows: result.rows};
+            if (result)
+                res.render('pages/home', {rows: result, username: req.session.username, money: req.session.money, items: req.session.items, error: req.session.error}); // {rows: result.rows};
+            else
+                res.render('pages/home', {rows: 0, username: req.session.username, money: req.session.money, items: req.session.items, error: req.session.error}); // {rows: result.rows};
         }
     });
 }
@@ -243,11 +305,15 @@ function getAnimalsDb(usersId, callback) {
             console.log("ERROR in query: " + err);
 			callback(err, null);
         } else {
-            console.log(result.rows);
-            
-            console.log("Successfully pulled info."); // or redirect to sign in page
-            var params = result.rows;
-            callback(null, params);
+            if (result.rows.length < 1) {
+                console.log("No result");
+                callback(null, 0);
+            } else {
+                console.log(result.rows);
+                console.log("Successfully pulled info."); // or redirect to sign in page
+                var params = result.rows;
+                callback(null, params);
+            }
         }
     });
 }
@@ -308,7 +374,8 @@ function getItems (req, res, next) {
         if (error || result == null || result.length < 1) {
             res.status(500).json({success: false, data: error});
         } else {
-            req.session.items = result;
+            if (result)
+                req.session.items = result;
             res.redirect("/getAnimals");
         }
     });
@@ -325,8 +392,13 @@ function getItemsDb(id, callback) {
             console.log("ERROR: " + err);
 			callback(err, null);
         } else {
-            console.log("Fonud result: " + JSON.stringify(result.rows));
-            callback(null, result.rows);
+            if (result.rows.length < 1) {
+                console.log("No result");
+                callback(null, 0);
+            } else {
+                console.log("Fonud result: " + JSON.stringify(result.rows));
+                callback(null, result.rows);
+            }
         }
     });
 }

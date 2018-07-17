@@ -8,6 +8,11 @@ body {
 h1 {
     font-family: sans-serif;
     color: #C5C9A4;
+/*    margin-bottom: 0px;*/
+}
+
+h2 {
+    margin-bottom: 0px;
 }
 
 ul {
@@ -40,11 +45,15 @@ li a:hover {
 }
 
 #right {
+    text-align: right;
     width: 25%;
     height: 100%;
     min-height: 100vh;
-    margin: 0;
+    padding: 10px;
     background-color: dimgrey;
     float: right;
-    padding: 5px;
+}
+
+.num {
+    width: 40px;
 }
