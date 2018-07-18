@@ -19,6 +19,7 @@ var sessionChecker = (req, res, next) => {
         console.log("Not signed in.");
         res.redirect('/signin.html');
     } else {
+        console.log("signed in!");
         next();
     }    
 }; // logout req.session.destroy();
@@ -43,6 +44,7 @@ app.set("port", process.env.PORT || 5000)
         req.session.error = null;
         res.redirect("/home");
     })
+    .get("/updateMoney", sessionChecker, updateMoney)
 
     .post("/sup", signUp)
     .post("/sin", signIn)
@@ -180,17 +182,36 @@ function newItemsDb(name, quantity, id, callback) {
     });
 }
 
-function updateMoney(newAmount, id) {
-    var sql = "UPDATE users SET money = $1 WHERE id = $2";
-//    var intMoney = parseInt(newAmount);
-//    console.log("INTMONEY: " + intMoney);
-    var params = [newAmount, id];
+function updateMoney(req, res) {
+    const sAmount = req.session.money;
+    const amount = (sAmount - 20);
+    const id = req.session.user_id;
     
-    pool.query(sql, params, function(err, result) {
+    updateMoneyDb(amount, id, function(error, result) {
+        if (error || result == null || result.length < 1) {
+            res.status(500).json({success: false, data: error});
+        } else {
+            req.session.money = result;
+            res.redirect("/home");
+//            res.status(200).json({succes: true});
+        }
+    });
+}
+
+function updateMoneyDb(newAmount, id, callback) {
+    console.log("Accesesing DB to update money...");
+    var intMoney = parseInt(newAmount);
+    var sql = "UPDATE users SET money = $1 WHERE id = $2";
+    var pur = [intMoney, id];
+    console.log(pur);
+    
+    pool.query(sql, pur, function(err, result) {
         if (err) {
             console.log("Error w/ moneys. " + err);
+            callback(err, null);
         } else {
             console.log("Successfully changed money amount.");
+            callback(null, newAmount);
         }
     });
 }
@@ -199,27 +220,28 @@ function newAnimals(req, res) {
     const aname = req.body.aname;
     const species = req.body.species;
     const id = req.session.user_id;
-    const newMoney = (((req.session.money).slice(1)) - 20.00);
-    console.log("NEW MONEY" + newMoney);
+//    const origMoney = (((req.session.money).slice(1)));
+//    const newMoney = (parseInt(origMoney));
+//    console.log("NEW MONEY" + newMoney);
+//    
+//    if (newMoney < 0) {
+//        req.session.error = "Insufficient funds.";
+//        res.redirect("/home");
+//    } else {
     
-    if (newMoney < 0) {
-        req.session.error = "Insufficient funds.";
-        res.redirect("/home");
-    }
-    
-    console.log("Adding new animal of species " + species + " with name: " + aname);
+        console.log("Adding new animal of species " + species + " with name: " + aname);
 
-    newAnimalsDb(aname, species, id, function(error, result) {
-        // now we just need to send back the data
-        if (error || result == null || result.length < 1) {
-            res.status(500).json({success: false, data: error});
-        } else {
-            updateMoney(newMoney, req.session.id);
-            req.session.money = "$" + newMoney + ".00";
-            res.redirect("/home");
-//            res.status(200).json({succes: true, animal_name: aname, species: species});
-        }
-    });
+        newAnimalsDb(aname, species, id, function(error, result) {
+            // now we just need to send back the data
+            if (error || result == null || result.length < 1) {
+                res.status(500).json({success: false, data: error});
+            } else {
+//                req.session.money = newMoney;
+                res.redirect("/updateMoney");
+//                res.status(200).json({succes: true, animal_name: aname, species: species});
+            }
+        });
+//    }
 }
 
 function newAnimalsDb(aname, species, id, callback) {
@@ -233,7 +255,7 @@ function newAnimalsDb(aname, species, id, callback) {
             console.log("Error in query: " + err);
             callback(err, null);
         } else {   
-            console.log("Successfully inserted " + species + " with name " + aname + "into DB.");
+            console.log("Successfully inserted " + species + " with name " + aname + " into DB.");
             callback (null, aname);
         }
     });
@@ -262,8 +284,8 @@ function signUpDb(uname, pass, callback) {
     console.log("About to access DB to sign up...");
     console.log("Pass is: " + pass);
     
-    var sql = "INSERT INTO users(username, password, money) VALUES($1, $2, $3)";
-    var params = [uname, pass, 100];
+    var sql = "INSERT INTO users(username, password, money, water, food) VALUES($1, $2, $3, $4, $5)";
+    var params = [uname, pass, 100, 0, 0];
     
     pool.query(sql, params, function(err, result) {
         if (err) {
@@ -286,9 +308,9 @@ function getAnimals(req, res) {
             res.status(500).json({success: false, data: error});
         } else {
             if (result)
-                res.render('pages/home', {rows: result, username: req.session.username, money: req.session.money, items: req.session.items, error: req.session.error}); // {rows: result.rows};
+                res.render('pages/home', {rows: result, username: req.session.username, money: req.session.money, items: req.session.items, error: req.session.error});
             else
-                res.render('pages/home', {rows: 0, username: req.session.username, money: req.session.money, items: req.session.items, error: req.session.error}); // {rows: result.rows};
+                res.render('pages/home', {rows: 0, username: req.session.username, money: req.session.money, items: req.session.items, error: req.session.error});
         }
     });
 }
@@ -311,8 +333,8 @@ function getAnimalsDb(usersId, callback) {
             } else {
                 console.log(result.rows);
                 console.log("Successfully pulled info."); // or redirect to sign in page
-                var params = result.rows;
-                callback(null, params);
+                var parameters = result.rows;
+                callback(null, parameters);
             }
         }
     });
@@ -333,7 +355,7 @@ function signIn(req, res) {
                 req.session.loggedIn = true;
                 req.session.user_id = result;
                 req.session.username = uname;
-                req.session.money = result2;
+                req.session.money = result2; // ex: 100 - it's an int
                 console.log("Logged in!");
             }
             res.redirect("/home");
@@ -384,7 +406,7 @@ function getItems (req, res, next) {
 function getItemsDb(id, callback) {
     console.log("Looking for items for person with id: " + id + "...");
     
-    var sql = "SELECT name, quantity FROM items WHERE usersId = $1 ORDER BY id";
+    var sql = "SELECT water, food FROM users WHERE id = $1";
     var params = [id];
     
     pool.query(sql, params, function(err, result) {

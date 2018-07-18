@@ -13,10 +13,6 @@
           <li><a href="/signout">Logout</a></li>
         </ul>
         
-        <% if (error) {
-            errorMsg(error);
-        } %>
-        
         <div id='left'>
             <p>Your current Pets:</p>
             <form action="/changeAnimalStatus" method="post">
@@ -40,7 +36,7 @@
         
         <div id='right'>
             <h1 style='margin-bottom: -15px;'><%= username %></h1>
-            <h3><%= money %></h3>
+            <h3>$<%= money %>.00</h3>
             
             <h2>Store</h2>
             <form action="/purchase" method="post">
@@ -67,11 +63,14 @@
 
             <h2>Your Items</h2>
             <p id="txtData">
-            <% if (items) { 
-                items.forEach(function(i) { %>
-                    <%= i.name %> - Quantity: <%= i.quantity %><br>
-                <% }); 
-            } %>
+            <% 
+                if (items) { 
+                    items.forEach(function(i) { %>
+                        Food - Quantity: <%= i.food %><br>
+                        Water - Quantity: <%= i.water %>
+                    <% }); 
+                } 
+            %>
             </p>
         </div>
     </body>
