@@ -268,7 +268,7 @@ function newItems(req, res) {
     }
     
     if ((req.session.money - (2 * quantity)) < 0)
-        redirect("/itemsMoney");
+        res.redirect("/itemsMoney");
     else {
     
         console.log("Adding new item");
