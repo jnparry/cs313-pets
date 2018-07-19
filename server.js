@@ -204,12 +204,17 @@ function feedWaterDb(feed, drink, callback) {
 
 function itemsMoney(req, res) {
     const sAmount = req.session.money;
+    console.log("Samount: " + sAmount);
     const amount = (sAmount - (2 * req.session.quantity));
+    console.log ("amount amount: " + amount);
+    console.log("quantity: " + req.session.quantity);
     const id = req.session.user_id;
     
     if (amount < 0) {
+        console.log("NOT enough moneys to purchase more");
         res.render('pages/home', {rows: req.session.result, username: req.session.username, money: req.session.money, food: req.session.food, water: req.session.water, errorMsg: 'Insufficient funds.'});
     } else {
+        console.log(amount);
         itemsMoneyDb(amount, id, function(error, result) {
             if (error || result == null || result.length < 1) {
     //            res.status(500).json({success: false, data: error});
@@ -267,9 +272,11 @@ function newItems(req, res) {
         name = 0;
     }
     
-    if ((req.session.money - (2 * quantity)) < 0)
+    if ((req.session.money - (2 * quantity)) < 0) {
+        req.session.quantity = quantity;
         res.redirect("/itemsMoney");
-    else {
+        console.log("NOT ENOUghF");
+    } else {
     
         console.log("Adding new item");
 
