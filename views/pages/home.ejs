@@ -62,7 +62,7 @@
         </div>
         
         <div id='right'>
-            <h1 style='margin-bottom: -15px;'><%= username %></h1>
+            <h1 style='margin-bottom: -15px; text-transform: uppercase;'><%= username %></h1>
             <h3>$<%= money %>.00</h3>
             
             <h2>Store</h2>
@@ -80,7 +80,7 @@
             
             <form action="/newAnimals" method="post">
                 <label for="aname">Pet's Name: </label>	
-                <input type="text" id="aname" name="aname" required><br>
+                <input type="text" id="aname" name="aname" pattern="[A-Za-z]{1,}" title="Alphabetical characters only." required><br>
 
                 <label for="species">Species: </label>	
                 <input type="text" id="species" name="species" required><br>

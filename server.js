@@ -354,8 +354,11 @@ function updateMoneyDb(newAmount, id, callback) {
 }
 
 function newAnimals(req, res) {
-    const aname = req.body.aname;
-    const species = req.body.species;
+    const inputName = req.body.aname;
+    const inputSpecies = req.body.species;    
+    const aname = inputName.charAt(0).toUpperCase() + inputName.slice(1);
+    const species = inputSpecies.charAt(0).toUpperCase() + inputSpecies.slice(1);
+    
     const id = req.session.user_id;
 
     if ((req.session.money - 20) < 0)
