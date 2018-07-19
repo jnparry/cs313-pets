@@ -6,30 +6,57 @@
         <title>Pet Care | Home</title>
     </head>
     
+    <script>
+        var open = false;
+        var prevId = null;
+        
+        function leave() {
+          window.location = "/home";
+        }
+//        setTimeout("leave()", 5000);
+        
+        function load(name, species, id) {
+            if (prevId != id)
+                open = false;
+            
+            prevId = id;
+            
+            if (open) {
+                document.getElementById("text").innerHTML = "";
+                open = false;
+            } else {
+                document.getElementById("text").innerHTML = "<h3>Are you sure you want to remove</h3><p>" + name + " the " + species + "<br>" + "<form action='/removeAnimal' method='post'><button type='submit' name='remove' value=" + id + ">Yes, remove</button></form></p>";
+                open = true;
+            }
+        }
+    </script>
+    
     <body>    
-        <ul>
-          <li><a href="#">Home</a></li>
-          <li><a href="#">Account</a></li>
-          <li><a href="/signout">Logout</a></li>
+        <ul style='z-index: 10; position: absolute; top: 0; left: 0; right: 0;'>
+            <li><a href="#">HOME</a></li>
+            <li><a href="#">ACCOUNT</a></li>
+            <li><a href="/signout">LOGOUT</a></li>
         </ul>
         
-        <div id='left'>
-            <p>Your current Pets:</p>
+        <div id='left' class="scrollbar">  
+            
+            <h3>Your current Pets:</h3>
             <form action="/changeAnimalStatus" method="post">
-                <% if (rows) { rows.forEach(function(r) { %>
-                    <p><%= r.name %> the <%= r.species %><br>
+                <% if (typeof rows !== 'undefined' && rows != 0) { rows.forEach(function(r) { %>
+                    <p><%= r.name %> the <%= r.species %>
+                        <button type="button" onclick="load('<%= r.name %>', '<%= r.species %>', <%= r.id %>)">Remove<i class="fa times" aria-hidden="true"></i></button><br>
                     <% if ((((Math.floor(Date.now() / 1000)) - r.lastfed) >= 86400) || (!r.lastfed)) { %>
                         Hunger level: high
                     <% } else { %>
                         Hunger level: low
                     <% } %>
-                        <button type="submit" id="feed" name="feed" value="<%=r.id%>">Give food</button><br>
+                        <button type="submit" id="feed" name="feed" value="<%=r.id%>">Give food<i class="fa cutlery" aria-hidden="true"></i></button><br>
                     <% if ((((Math.floor(Date.now() / 1000)) - r.lastdrink) >= 86400) || (!r.lastdrink)) { %>
                         Thirst level: high
                     <% } else { %>
                         Thirst level: low
                     <% } %>
-                        <button type="submit" id="drink" name="drink" value="<%=r.id%>">Give water</button></p>
+                        <button type="submit" id="drink" name="drink" value="<%=r.id%>">Give water<i class="fa coffee" aria-hidden="true"></i></button></p>
                 <% }); }%>
             </form>
         </div>
@@ -39,12 +66,12 @@
             <h3>$<%= money %>.00</h3>
             
             <h2>Store</h2>
-            <form action="/purchase" method="post">
-                <label for="water">$2.00 - Water </label>
-                <input class="num" type="number" name="water">
+            <form action="/newItems" method="post">
+                <label for="food">$2.00 - Food </label>
+                <input class="num" type="number" min=0 name="food">
                 <button type="submit">Purchase</button><br>
-                <label for="food">$2.50 - Food </label>
-                <input class="num" type="number" name="food">
+                <label for="water">$2.00 - Water </label>
+                <input class="num" type="number" min=0 name="water">
                 <button type="submit">Purchase</button>
             </form>
             
@@ -63,15 +90,21 @@
 
             <h2>Your Items</h2>
             <p id="txtData">
-            <% 
-                if (items) { 
-                    items.forEach(function(i) { %>
-                        Food - Quantity: <%= i.food %><br>
-                        Water - Quantity: <%= i.water %>
-                    <% }); 
-                } 
-            %>
+                Food - Quantity: <%= food %><br>
+                Water - Quantity: <%= water %>
             </p>
         </div>
+        
+        <section id="text" style='z-index: -5;'>
+            <h3 style="color: red;">
+                <% if (errorMsg) { %>
+                    <%= errorMsg %>
+                    <script>
+    //                    setTimeout("leave()", 3000);
+                    </script>
+                <% } %>
+            </h3>
+        </section>
+        
     </body>
 </html>

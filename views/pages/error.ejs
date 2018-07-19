@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="/stylesheets/default.css">
+        <title>Pet Care | Error</title>
+    </head>
+    
+    <body>  
+        <h1>Error</h1>
+        <h3 style="color: red";>
+            <% if (errorMsg) { %>
+            Error: <%= errorMsg %>
+            <% } else { %>
+            You will be redirected.
+            <%} %>
+        </h3>
+        <h4>Redirecting...</h4>
+    </body>
+    
+    <script>
+        setTimeout(function () {
+            // after 2 seconds
+//            window.location = "/signin.html";
+            history.go(-1);
+        }, 2000)
+    </script>
+</html>

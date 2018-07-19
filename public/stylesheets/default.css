@@ -1,14 +1,20 @@
+@import url('https://fonts.googleapis.com/css?family=Merienda|Montserrat|Quicksand');
+
 body {
     margin: 0;
     width: 100%;
     background-color: #476A6F;
+    background-color: #fff;
+    background-color: #E2E2E2;
     color: #C5C9A4;
+    color: black;
+    font-family: 'Quicksand';
 }
 
 h1 {
     font-family: sans-serif;
     color: #C5C9A4;
-/*    margin-bottom: 0px;*/
+    color: black;
 }
 
 h2 {
@@ -40,20 +46,59 @@ li a:hover {
 }
 
 #left {
-    height: 100vh;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    bottom: 0px;
+    z-index: 0;
+    padding: 10px;
+    padding-top: 50px;
     float: left;
+    text-align: right;
+    background-color: #247BA0;
+}
+
+#left::-webkit-scrollbar {
+    width: 12px;
+    background-color: #247BA0;
+}
+
+#left::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    background-color: #333;
+}
+
+#left::-webkit-scrollbar-track {
+    background-color: #247BA0;
 }
 
 #right {
-    text-align: right;
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    z-index: 0;
     width: 25%;
-    height: 100%;
-    min-height: 100vh;
     padding: 10px;
-    background-color: dimgrey;
+    padding-top: 50px;
+    background-color: #247BA0;
     float: right;
+    text-align: right;
 }
 
 .num {
     width: 40px;
+}
+
+.scrollbar {
+    overflow-y: auto;
+}
+
+#text {
+    text-align: center;
+    padding-top: 50px;
+}
+
+button {
+    border-radius: 0px;
 }
